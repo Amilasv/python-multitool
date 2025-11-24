@@ -1,15 +1,3 @@
-"""
-main.py — MultiTool GUI (full)
-- customtkinter UI
-- Login/Register (users.json, pbkdf2)
-- Weather (open-meteo geocoding + current_weather)
-- Password Manager (Fernet encrypted passwords)
-- Music Player (pygame)
-- To-Do List (todos.json)
-- Currency Dashboard + Converter (left: live rates with up/down; right: converter)
-Author: delivered to you. Paste & run: python main.py
-"""
-
 import os
 import json
 import threading
@@ -21,7 +9,6 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, filedialog
 
-# External libs
 try:
     import customtkinter as ctk
 except Exception as e:
@@ -42,9 +29,7 @@ try:
 except Exception as e:
     raise RuntimeError("pygame is required. Install: pip install pygame") from e
 
-# ---------------------------
-# App files & constants
-# ---------------------------
+
 APP_DIR = Path.home() / ".multitool_app"
 APP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -53,9 +38,7 @@ PASSWORDS_FILE = APP_DIR / "passwords.bin"
 FERNET_KEY_FILE = APP_DIR / "secret.key"
 TODOS_FILE = APP_DIR / "todos.json"
 
-# ---------------------------
-# Utils: pbkdf2 + Fernet
-# ---------------------------
+
 def pbkdf2_hash(password: str) -> str:
     salt = os.urandom(16)
     hashed = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200000)
@@ -81,9 +64,7 @@ def get_fernet():
 
 FERNET = get_fernet()
 
-# ---------------------------
-# Data load/save helpers
-# ---------------------------
+
 def load_users():
     if USERS_FILE.exists():
         try:
@@ -121,9 +102,7 @@ def load_todos():
 def save_todos(todos):
     TODOS_FILE.write_text(json.dumps(todos, indent=2, ensure_ascii=False), encoding="utf-8")
 
-# ---------------------------
-# Music init
-# ---------------------------
+
 pygame.init()
 try:
     pygame.mixer.init()
@@ -139,9 +118,7 @@ def play_music_file(path):
     except Exception as e:
         messagebox.showerror("Music Error", f"Could not play file:\n{e}")
 
-# ---------------------------
-# Currency rates manager
-# ---------------------------
+
 # We'll use https://open.er-api.com/v6/latest/USD which returns rates keyed by currency.
 # Keep previous rates in-memory to compute up/down change.
 class RatesFetcher:
@@ -194,9 +171,7 @@ except Exception:
     pass
 RATES_FETCHER.start_periodic(interval=60)
 
-# ---------------------------
-# UI Setup
-# ---------------------------
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
@@ -240,9 +215,7 @@ class MultiToolApp:
         b_currency.grid(row=2, column=0, padx=18, pady=14)
         b_auth.grid(row=2, column=1, padx=18, pady=14)
 
-    # ---------------------------
-    # Auth windows: login + register
-    # ---------------------------
+   
     def show_login_window(self):
         login_win = ctk.CTkToplevel(self.root)
         login_win.title("Login or Register")
@@ -317,9 +290,6 @@ class MultiToolApp:
         ctk.CTkButton(login_win, text="Login", width=220, command=do_login).pack(pady=10)
         ctk.CTkButton(login_win, text="Register", width=220, fg_color="#555", hover_color="#777", command=open_register).pack(pady=6)
 
-    # ---------------------------
-    # Weather
-    # ---------------------------
     def open_weather(self):
         win = ctk.CTkToplevel(self.root)
         win.title("Weather")
@@ -375,9 +345,7 @@ class MultiToolApp:
 
         ctk.CTkButton(win, text="Get Weather", width=200, command=fetch_weather).pack(pady=8)
 
-    # ---------------------------
-    # Password Manager
-    # ---------------------------
+    
     def open_passwords(self):
         win = ctk.CTkToplevel(self.root)
         win.title("Password Manager")
@@ -461,9 +429,7 @@ class MultiToolApp:
 
         listbox.bind("<<ListboxSelect>>", on_select)
 
-    # ---------------------------
-    # Music Player
-    # ---------------------------
+
     def open_music(self):
         win = ctk.CTkToplevel(self.root)
         win.title("Music Player")
@@ -549,9 +515,7 @@ class MultiToolApp:
         vol.configure(command=set_vol)
         vol.pack()
 
-    # ---------------------------
-    # To-Do List
-    # ---------------------------
+   
     def open_todo(self):
         win = ctk.CTkToplevel(self.root)
         win.title("To-Do List")
@@ -606,9 +570,6 @@ class MultiToolApp:
         ctk.CTkButton(btnf, text="Toggle Done", width=140, command=toggle_done).pack(side="left", padx=6)
         ctk.CTkButton(btnf, text="Delete", width=140, command=delete_task, fg_color="#f06").pack(side="left", padx=6)
 
-    # ---------------------------
-    # Currency Dashboard & Converter
-    # ---------------------------
     def open_currency(self):
         win = ctk.CTkToplevel(self.root)
         win.title("Currency Dashboard + Converter")
@@ -620,7 +581,6 @@ class MultiToolApp:
         right_frame = ctk.CTkFrame(win)
         right_frame.pack(side="left", fill="both", expand=True, padx=(0,12), pady=12)
 
-        # LEFT: title + scrollable list
         ctk.CTkLabel(left_frame, text="📊 Live Currency Rates (base USD)", font=("Roboto", 16, "bold")).pack(pady=(8,8))
         scroll = ctk.CTkScrollableFrame(left_frame, width=360, height=520)
         scroll.pack(pady=(6,0))
@@ -631,7 +591,6 @@ class MultiToolApp:
         def load_and_display_rates():
             rates, prev = RATES_FETCHER.get_rates_snapshot()
             scroll_children = scroll.winfo_children()
-            # clear old widgets
             for w in scroll_children:
                 w.destroy()
             if not rates:
@@ -673,7 +632,7 @@ class MultiToolApp:
                 delta_lbl = ctk.CTkLabel(row, text=delta_text, anchor="e", width=80, text_color=delta_color)
                 delta_lbl.pack(side="right", padx=(0,6))
 
-        # initial display
+        
         load_and_display_rates()
 
         # Periodically refresh UI (every 10s, but underlying fetcher updates every 60s)
@@ -726,7 +685,6 @@ class MultiToolApp:
                 result_lbl.configure(text="Invalid currency code", text_color="red")
                 return
             try:
-                # convert: amount_in_usd = amt / rate[frm]; final = amount_in_usd * rate[to]
                 amount_in_usd = amt / rates[frm]
                 final = amount_in_usd * rates[to]
                 result_lbl.configure(text=f"{amt} {frm} = {round(final,6)} {to}", text_color="white")
@@ -735,7 +693,7 @@ class MultiToolApp:
 
         ctk.CTkButton(conv_frame, text="Convert", width=200, command=do_convert).pack(pady=6)
 
-        # Extra: Refresh rates button and reload combobox list
+        
         def refresh_now():
             try:
                 RATES_FETCHER.fetch_once()
@@ -753,9 +711,7 @@ class MultiToolApp:
 
     # end open_currency
 
-# ---------------------------
-# Run app
-# ---------------------------
+
 def main():
     root = ctk.CTk()
     app = MultiToolApp(root)
